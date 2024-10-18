@@ -9,7 +9,7 @@
 
 namespace glomap {
 // -------------------------------------
-// Mappers starting from COLMAP database
+// api: Mappers starting from COLMAP database
 // -------------------------------------
 int RunMapper(int argc, char** argv) {
   std::string database_path;
@@ -19,6 +19,7 @@ int RunMapper(int argc, char** argv) {
   std::string constraint_type = "ONLY_POINTS";
   std::string output_format = "bin";
 
+  // step: 1 参数初始化并解析
   OptionManager options;
   options.AddRequiredOption("database_path", &database_path);
   options.AddRequiredOption("output_path", &output_path);
@@ -29,14 +30,15 @@ int RunMapper(int argc, char** argv) {
                            "POINTS_AND_CAMERAS_BALANCED, POINTS_AND_CAMERAS}");
   options.AddDefaultOption("output_format", &output_format, "{bin, txt}");
   options.AddGlobalMapperFullOptions();
-
   options.Parse(argc, argv);
 
+  // step: 2 检查database
   if (!colmap::ExistsFile(database_path)) {
     LOG(ERROR) << "`database_path` is not a file";
     return EXIT_FAILURE;
   }
 
+  // step: 3 约束类型
   if (constraint_type == "ONLY_POINTS") {
     options.mapper->opt_gp.constraint_type =
         GlobalPositionerOptions::ONLY_POINTS;
@@ -54,13 +56,14 @@ int RunMapper(int argc, char** argv) {
     return EXIT_FAILURE;
   }
 
-  // Check whether output_format is valid
+  // step: 4 检查输出格式
   if (output_format != "bin" && output_format != "txt") {
     LOG(ERROR) << "Invalid output format";
     return EXIT_FAILURE;
   }
 
-  // Load the database
+  // step: 5 Load the database
+  LOG(INFO) << "Loading Feature Database,,,";
   ViewGraph view_graph;
   std::unordered_map<camera_t, Camera> cameras;
   std::unordered_map<image_t, Image> images;
@@ -74,9 +77,8 @@ int RunMapper(int argc, char** argv) {
     return EXIT_FAILURE;
   }
 
+  // step: 6 solver的主入口
   GlobalMapper global_mapper(*options.mapper);
-
-  // Main solver
   LOG(INFO) << "Loaded database";
   colmap::Timer run_timer;
   run_timer.Start();
@@ -86,6 +88,7 @@ int RunMapper(int argc, char** argv) {
   LOG(INFO) << "Reconstruction done in " << run_timer.ElapsedSeconds()
             << " seconds";
 
+  // step: 7 输出重建结果
   WriteGlomapReconstruction(
       output_path, cameras, images, tracks, output_format, image_path);
   LOG(INFO) << "Export to COLMAP reconstruction done";

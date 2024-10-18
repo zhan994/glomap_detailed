@@ -31,10 +31,13 @@ int ShowHelp(
 
 }  // namespace
 
+// api: 整个工程的主函数
 int main(int argc, char** argv) {
+  // step: 1 初始化日志
   colmap::InitializeGlog(argv);
   FLAGS_alsologtostderr = true;
 
+  // step: 2 指令
   std::vector<std::pair<std::string, command_func_t>> commands;
   commands.emplace_back("mapper", &glomap::RunMapper);
   commands.emplace_back("mapper_resume", &glomap::RunMapperResume);
@@ -43,6 +46,7 @@ int main(int argc, char** argv) {
     return ShowHelp(commands);
   }
 
+  // step: 3 指令解析并运行
   const std::string command = argv[1];
   if (command == "help" || command == "-h" || command == "--help") {
     return ShowHelp(commands);

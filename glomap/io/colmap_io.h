@@ -5,6 +5,7 @@
 
 namespace glomap {
 
+// api: 输出glomap的重建结果
 void WriteGlomapReconstruction(
     const std::string& reconstruction_path,
     const std::unordered_map<camera_t, Camera>& cameras,

@@ -171,9 +171,11 @@ void ViewGraphManipulater::UpdateImagePairsConfig(
     ViewGraph& view_graph,
     const std::unordered_map<camera_t, Camera>& cameras,
     const std::unordered_map<image_t, Image>& images) {
-  // For each camera, check the number of times that the camera is involved in a
-  // pair with configuration 2 First: the total occurence; second: the number of
-  // pairs with configuration 2
+  // For each camera, check the number of times that the camera
+  // is involved in a pair with configuration 2 'CALIBRATED'
+  // First: the total occurence;
+  // second: the number of pairs with configuration 2 'CALIBRATED'
+  // step: 1 统计对极几何的图像对配置为E-CALIBRATED还是F-UNCALIBRATED
   std::unordered_map<camera_t, std::pair<int, int>> camera_counter;
   for (auto& [pair_id, image_pair] : view_graph.image_pairs) {
     if (image_pair.is_valid == false) continue;
@@ -199,6 +201,7 @@ void ViewGraphManipulater::UpdateImagePairsConfig(
 
   // Check the ratio of valid and invalid relative pair, if the majority of the
   // pairs are valid, then set the camera to valid
+  // step: 2 检查图像对的有效性，E-CALIBRATED占比大即有效
   std::unordered_map<camera_t, bool> camera_validity;
   for (auto& [camera_id, counter] : camera_counter) {
     if (counter.first == 0) {
@@ -210,6 +213,7 @@ void ViewGraphManipulater::UpdateImagePairsConfig(
     }
   }
 
+  // step: 3 对于F-UNCALIBRATED的图像对通过帧间姿态恢复F/E
   for (auto& [pair_id, image_pair] : view_graph.image_pairs) {
     if (image_pair.is_valid == false) continue;
     if (image_pair.config != colmap::TwoViewGeometry::UNCALIBRATED) continue;

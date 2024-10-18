@@ -42,7 +42,7 @@ struct Image {
   int cluster_id = -1;
 
   // The pose of the image, defined as the transformation from world to camera.
-  Rigid3d cam_from_world;
+  Rigid3d cam_from_world;  // T_c_w * p_w = p_c
 
   // Gravity information
   GravityInfo gravity_info;

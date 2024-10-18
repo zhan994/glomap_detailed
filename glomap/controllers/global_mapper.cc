@@ -16,7 +16,7 @@ bool GlobalMapper::Solve(const colmap::Database& database,
                          std::unordered_map<camera_t, Camera>& cameras,
                          std::unordered_map<image_t, Image>& images,
                          std::unordered_map<track_t, Track>& tracks) {
-  // 0. Preprocessing
+  // step: 0 Preprocessing
   if (!options_.skip_preprocessing) {
     std::cout << "-------------------------------------" << std::endl;
     std::cout << "Running preprocessing ..." << std::endl;
@@ -31,7 +31,7 @@ bool GlobalMapper::Solve(const colmap::Database& database,
     run_timer.PrintSeconds();
   }
 
-  // 1. Run view graph calibration
+  // step: 1 Run view graph calibration
   if (!options_.skip_view_graph_calibration) {
     std::cout << "-------------------------------------" << std::endl;
     std::cout << "Running view graph calibration ..." << std::endl;
@@ -42,7 +42,7 @@ bool GlobalMapper::Solve(const colmap::Database& database,
     }
   }
 
-  // 2. Run relative pose estimation
+  // step: 2 Run relative pose estimation
   if (!options_.skip_relative_pose_estimation) {
     std::cout << "-------------------------------------" << std::endl;
     std::cout << "Running relative pose estimation ..." << std::endl;
@@ -71,7 +71,7 @@ bool GlobalMapper::Solve(const colmap::Database& database,
     run_timer.PrintSeconds();
   }
 
-  // 3. Run rotation averaging for three times
+  // step: 3 Run rotation averaging for three times
   if (!options_.skip_rotation_averaging) {
     std::cout << "-------------------------------------" << std::endl;
     std::cout << "Running rotation averaging ..." << std::endl;
@@ -108,7 +108,7 @@ bool GlobalMapper::Solve(const colmap::Database& database,
     run_timer.PrintSeconds();
   }
 
-  // 4. Track establishment and selection
+  // step: 4 Track establishment and selection
   if (!options_.skip_track_establishment) {
     colmap::Timer run_timer;
     run_timer.Start();
@@ -128,7 +128,7 @@ bool GlobalMapper::Solve(const colmap::Database& database,
     run_timer.PrintSeconds();
   }
 
-  // 5. Global positioning
+  // step: 5 Global positioning
   if (!options_.skip_global_positioning) {
     std::cout << "-------------------------------------" << std::endl;
     std::cout << "Running global positioning ..." << std::endl;
@@ -169,7 +169,7 @@ bool GlobalMapper::Solve(const colmap::Database& database,
     run_timer.PrintSeconds();
   }
 
-  // 6. Bundle adjustment
+  // step: 6 Bundle adjustment
   if (!options_.skip_bundle_adjustment) {
     std::cout << "-------------------------------------" << std::endl;
     std::cout << "Running bundle adjustment ..." << std::endl;
@@ -255,7 +255,7 @@ bool GlobalMapper::Solve(const colmap::Database& database,
     run_timer.PrintSeconds();
   }
 
-  // 7. Retriangulation
+  // step: 7 Retriangulation
   if (!options_.skip_retriangulation) {
     std::cout << "-------------------------------------" << std::endl;
     std::cout << "Running retriangulation ..." << std::endl;
@@ -307,7 +307,7 @@ bool GlobalMapper::Solve(const colmap::Database& database,
         options_.inlier_thresholds.min_triangulation_angle);
   }
 
-  // 8. Reconstruction pruning
+  // step: 8 Reconstruction pruning
   if (!options_.skip_pruning) {
     std::cout << "-------------------------------------" << std::endl;
     std::cout << "Running postprocessing ..." << std::endl;

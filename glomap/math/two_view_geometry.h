@@ -21,9 +21,11 @@ double GetOrientationSignum(const Eigen::Matrix3d& F,
                             const Eigen::Vector2d& pt2);
 
 // Get the essential matrix from relative pose
+// api: 通过内参和相对位姿求本质矩阵
 void EssentialFromMotion(const Rigid3d& pose, Eigen::Matrix3d* E);
 
 // Get the essential matrix from relative pose
+// api: 通过内参和相对位姿求基础矩阵
 void FundamentalFromMotionAndCameras(const Camera& camera1,
                                      const Camera& camera2,
                                      const Rigid3d& pose,

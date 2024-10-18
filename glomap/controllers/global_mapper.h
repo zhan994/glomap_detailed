@@ -46,6 +46,7 @@ class GlobalMapper {
  public:
   GlobalMapper(const GlobalMapperOptions& options) : options_(options) {}
 
+  // api: 主求解函数
   bool Solve(const colmap::Database& database,
              ViewGraph& view_graph,
              std::unordered_map<camera_t, Camera>& cameras,

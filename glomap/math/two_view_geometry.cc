@@ -39,6 +39,7 @@ double GetOrientationSignum(const Eigen::Matrix3d& F,
 }
 
 void EssentialFromMotion(const Rigid3d& pose, Eigen::Matrix3d* E) {
+  // note: E21 = t21^{\land} * R21
   *E << 0.0, -pose.translation(2), pose.translation(1), pose.translation(2),
       0.0, -pose.translation(0), -pose.translation(1), pose.translation(0), 0.0;
   *E = (*E) * pose.rotation.toRotationMatrix();
@@ -49,6 +50,8 @@ void FundamentalFromMotionAndCameras(const Camera& camera1,
                                      const Camera& camera2,
                                      const Rigid3d& pose,
                                      Eigen::Matrix3d* F) {
+  // note: F21 = K2^{-T} * E21 * K1^{-1}
+  // todo: 疑似camera内参顺序错了
   Eigen::Matrix3d E;
   EssentialFromMotion(pose, &E);
   *F = camera1.GetK().transpose().inverse() * E * camera2.GetK().inverse();

@@ -176,7 +176,7 @@ void ConvertDatabaseToGlomap(const colmap::Database& database,
                              ViewGraph& view_graph,
                              std::unordered_map<camera_t, Camera>& cameras,
                              std::unordered_map<image_t, Image>& images) {
-  // Add the images
+  // step: 1 Add the images
   std::vector<colmap::Image> images_colmap = database.ReadAllImages();
   image_t counter = 0;
   for (auto& image : images_colmap) {
@@ -188,7 +188,10 @@ void ConvertDatabaseToGlomap(const colmap::Database& database,
     if (image_id == colmap::kInvalidImageId) continue;
     auto ite = images.insert(std::make_pair(
         image_id, Image(image_id, image.CameraId(), image.Name())));
+
+    // todo: add pose_prior by txt/csv file
     const colmap::PosePrior prior = database.ReadPosePrior(image_id);
+    std::cout << "PosePrior info: " << prior.position << std::endl;
     if (prior.IsValid()) {
       ite.first->second.cam_from_world = Rigid3d(
           colmap::Rigid3d(Eigen::Quaterniond::Identity(), prior.position));
@@ -198,7 +201,7 @@ void ConvertDatabaseToGlomap(const colmap::Database& database,
   }
   std::cout << std::endl;
 
-  // Read keypoints
+  // step: 2 Read keypoints
   for (auto& [image_id, image] : images) {
     colmap::FeatureKeypoints keypoints = database.ReadKeypoints(image_id);
 
@@ -209,14 +212,14 @@ void ConvertDatabaseToGlomap(const colmap::Database& database,
     }
   }
 
-  // Add the cameras
+  // step: 3 Add the cameras
   std::vector<colmap::Camera> cameras_colmap = database.ReadAllCameras();
   for (auto& camera : cameras_colmap) {
     camera_t camera_id = camera.camera_id;
     cameras[camera_id] = camera;
   }
 
-  // Add the matches
+  // step: 4 Add the matches & view_graph via matches
   std::vector<std::pair<colmap::image_pair_t, colmap::FeatureMatches>>
       all_matches = database.ReadAllMatches();
 
@@ -229,16 +232,19 @@ void ConvertDatabaseToGlomap(const colmap::Database& database,
     if ((match_idx + 1) % 1000 == 0 || match_idx == all_matches.size() - 1)
       std::cout << "\r Loading Image Pair " << match_idx + 1 << " / "
                 << all_matches.size() << std::flush;
-    // Read the image pair from COLMAP database
+
+    // step: 4.1 Read the image pair
     colmap::image_pair_t pair_id = all_matches[match_idx].first;
     std::pair<colmap::image_t, colmap::image_t> image_pair_colmap =
         database.PairIdToImagePair(pair_id);
     colmap::image_t image_id1 = image_pair_colmap.first;
     colmap::image_t image_id2 = image_pair_colmap.second;
 
+    // step: 4.2 Read feature matches
     colmap::FeatureMatches& feature_matches = all_matches[match_idx].second;
 
     // Initialize the image pair
+    // step: 4.3 two_view_geometry for image_pair
     auto ite = image_pairs.insert(
         std::make_pair(ImagePair::ImagePairToPairId(image_id1, image_id2),
                        ImagePair(image_id1, image_id2)));
@@ -256,8 +262,9 @@ void ConvertDatabaseToGlomap(const colmap::Database& database,
       invalid_count++;
       continue;
     }
-
-    // Collect the fundemental matrices
+    std::cout << "two_view.cam2_from_cam1: "
+              << two_view.cam2_from_cam1.ToMatrix().matrix() << std::endl;
+    // step: 4.3.1 matrixF / matrixH (planar)
     if (two_view.config == colmap::TwoViewGeometry::UNCALIBRATED) {
       image_pair.F = two_view.F;
     } else if (two_view.config == colmap::TwoViewGeometry::CALIBRATED) {
@@ -275,7 +282,7 @@ void ConvertDatabaseToGlomap(const colmap::Database& database,
     }
     image_pair.config = two_view.config;
 
-    // Collect the matches
+    // step: 4.4 Collect the matches
     image_pair.matches = Eigen::MatrixXi(feature_matches.size(), 2);
 
     std::vector<Eigen::Vector2d>& keypoints1 =
