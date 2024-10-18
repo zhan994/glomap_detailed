@@ -54,7 +54,7 @@ void FundamentalFromMotionAndCameras(const Camera& camera1,
   // todo: 疑似camera内参顺序错了
   Eigen::Matrix3d E;
   EssentialFromMotion(pose, &E);
-  *F = camera1.GetK().transpose().inverse() * E * camera2.GetK().inverse();
+  *F = camera2.GetK().transpose().inverse() * E * camera1.GetK().inverse();
 }
 
 double SampsonError(const Eigen::Matrix3d& E,
