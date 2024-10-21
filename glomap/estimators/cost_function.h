@@ -99,6 +99,7 @@ inline std::array<Eigen::Vector4d, 3> fetzer_ds(
   return ds;
 }
 
+// api: 不同相机残差类
 class FetzerFocalLengthCost {
  public:
   FetzerFocalLengthCost(const Eigen::Matrix3d& i1_F_i0,
@@ -158,6 +159,7 @@ class FetzerFocalLengthCost {
 };
 
 // Calibration error for the image pairs sharing the camera
+// api: 相同相机残差类，即focal_length相同
 class FetzerFocalLengthSameCameraCost {
  public:
   FetzerFocalLengthSameCameraCost(const Eigen::Matrix3d& i1_F_i0,
