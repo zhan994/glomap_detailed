@@ -262,12 +262,16 @@ void ConvertDatabaseToGlomap(const colmap::Database& database,
       invalid_count++;
       continue;
     }
-    std::cout << "two_view.cam2_from_cam1: "
-              << two_view.cam2_from_cam1.ToMatrix().matrix() << std::endl;
+
     // step: 4.3.1 matrixF / matrixH (planar)
     if (two_view.config == colmap::TwoViewGeometry::UNCALIBRATED) {
       image_pair.F = two_view.F;
     } else if (two_view.config == colmap::TwoViewGeometry::CALIBRATED) {
+      // todo: F矩阵用单位矩阵变换恢复重置？
+      std::cout
+          << "FundamentalFromMotionAndCameras by two_view.cam2_from_cam1: "
+          << two_view.cam2_from_cam1.ToMatrix().matrix() << std::endl;
+
       FundamentalFromMotionAndCameras(
           cameras.at(images.at(image_pair.image_id1).camera_id),
           cameras.at(images.at(image_pair.image_id2).camera_id),

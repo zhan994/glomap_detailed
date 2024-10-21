@@ -51,7 +51,6 @@ void FundamentalFromMotionAndCameras(const Camera& camera1,
                                      const Rigid3d& pose,
                                      Eigen::Matrix3d* F) {
   // note: F21 = K2^{-T} * E21 * K1^{-1}
-  // todo: 疑似camera内参顺序错了
   Eigen::Matrix3d E;
   EssentialFromMotion(pose, &E);
   *F = camera2.GetK().transpose().inverse() * E * camera1.GetK().inverse();

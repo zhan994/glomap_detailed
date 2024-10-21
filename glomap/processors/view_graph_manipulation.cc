@@ -228,6 +228,12 @@ void ViewGraphManipulater::UpdateImagePairsConfig(
 
     if (camera_validity[camera_id1] && camera_validity[camera_id2]) {
       image_pair.config = colmap::TwoViewGeometry::CALIBRATED;
+
+      // todo: F矩阵用单位矩阵变换恢复重置？
+      std::cout
+          << "FundamentalFromMotionAndCameras by image_pair.cam2_from_cam1:"
+          << image_pair.cam2_from_cam1.ToMatrix().matrix() << std::endl;
+
       FundamentalFromMotionAndCameras(
           camera1, camera2, image_pair.cam2_from_cam1, &image_pair.F);
     }
@@ -239,9 +245,13 @@ void ViewGraphManipulater::DecomposeRelPose(
     ViewGraph& view_graph,
     std::unordered_map<camera_t, Camera>& cameras,
     std::unordered_map<image_t, Image>& images) {
+  // step: 1 采集有效图像对
   std::vector<image_pair_t> image_pair_ids;
   for (auto& [pair_id, image_pair] : view_graph.image_pairs) {
+    // step: 1.1 图像对是否有效，UNDEFINED/DEGENERATE/WATERMARK/MULTIPLE无效
     if (image_pair.is_valid == false) continue;
+
+    // step: 1.2 检查是否都有相机的先验focal_length
     if (!cameras[images[image_pair.image_id1].camera_id]
              .has_prior_focal_length ||
         !cameras[images[image_pair.image_id2].camera_id].has_prior_focal_length)
@@ -252,9 +262,11 @@ void ViewGraphManipulater::DecomposeRelPose(
   const int64_t num_image_pairs = image_pair_ids.size();
   LOG(INFO) << "Decompose relative pose for " << num_image_pairs << " pairs";
 
+  // step: 2 开启线程池处理 two_view_geometry
   colmap::ThreadPool thread_pool(colmap::ThreadPool::kMaxNumThreads);
   for (int64_t idx = 0; idx < num_image_pairs; idx++) {
     thread_pool.AddTask([&, idx]() {
+      // step: 2.1 读取图像对信息
       ImagePair& image_pair = view_graph.image_pairs.at(image_pair_ids[idx]);
       image_t image_id1 = image_pair.image_id1;
       image_t image_id2 = image_pair.image_id2;
@@ -263,6 +275,7 @@ void ViewGraphManipulater::DecomposeRelPose(
       camera_t camera_id2 = images.at(image_id2).camera_id;
 
       // Use the two-view geometry to re-estimate the relative pose
+      // step: 2.2 利用 two_view_geometry 重新估计 rel pose
       colmap::TwoViewGeometry two_view_geometry;
       two_view_geometry.E = image_pair.E;
       two_view_geometry.F = image_pair.F;
@@ -285,9 +298,11 @@ void ViewGraphManipulater::DecomposeRelPose(
                    cameras[camera_id2].has_prior_focal_length))
         return;
 
+      // step: 2.3 使用重新估计的外参以及two_view_geometry配置
       image_pair.config = two_view_geometry.config;
       image_pair.cam2_from_cam1 = two_view_geometry.cam2_from_cam1;
 
+      // step: 2.4 尺度归一化
       if (image_pair.cam2_from_cam1.translation.norm() > EPS) {
         image_pair.cam2_from_cam1.translation =
             image_pair.cam2_from_cam1.translation.normalized();
@@ -300,6 +315,10 @@ void ViewGraphManipulater::DecomposeRelPose(
   size_t counter = 0;
   for (size_t idx = 0; idx < image_pair_ids.size(); idx++) {
     ImagePair& image_pair = view_graph.image_pairs.at(image_pair_ids[idx]);
+
+    std::cout << "DecomposeRelPose: "
+              << image_pair.cam2_from_cam1.ToMatrix().matrix() << std::endl;
+
     if (image_pair.config != colmap::TwoViewGeometry::CALIBRATED &&
         image_pair.config != colmap::TwoViewGeometry::PLANAR_OR_PANORAMIC)
       counter++;
