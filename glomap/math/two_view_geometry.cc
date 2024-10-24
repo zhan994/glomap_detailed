@@ -73,10 +73,10 @@ double SampsonError(const Eigen::Matrix3d& E,
 double SampsonError(const Eigen::Matrix3d& E,
                     const Eigen::Vector3d& x1,
                     const Eigen::Vector3d& x2) {
-  Eigen::Vector3d Ex1 = E * x1 / (EPS + x1[2]);
-  Eigen::Vector3d Etx2 = E.transpose() * x2 / (EPS + x2[2]);
+  Eigen::Vector3d Ex1 = E * x1 / (EPS + x1[2]); // x1对应的极线
+  Eigen::Vector3d Etx2 = E.transpose() * x2 / (EPS + x2[2]); // x2对应的极线
 
-  double C = Ex1.dot(x2);
+  double C = Ex1.dot(x2); 
   double Cx = Ex1.head(2).squaredNorm();
   double Cy = Etx2.head(2).squaredNorm();
   double r2 = C * C / (Cx + Cy);

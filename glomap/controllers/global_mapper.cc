@@ -26,6 +26,7 @@ bool GlobalMapper::Solve(const colmap::Database& database,
     run_timer.Start();
     // If camera intrinsics seem to be good, force the pair to use essential
     // matrix
+    // note: 如果内参可信，强制使用E本质矩阵
     ViewGraphManipulater::UpdateImagePairsConfig(view_graph, cameras, images);
     ViewGraphManipulater::DecomposeRelPose(view_graph, cameras, images);
     run_timer.PrintSeconds();
@@ -51,9 +52,13 @@ bool GlobalMapper::Solve(const colmap::Database& database,
     colmap::Timer run_timer;
     run_timer.Start();
     // Relative pose relies on the undistorted images
+    // step: 2.1 图像去畸变
     UndistortImages(cameras, images, true);
+
+    // step: 2.2 相对位姿估计
     EstimateRelativePoses(view_graph, cameras, images, options_.opt_relpose);
 
+    // step: 2.3 图像对的内点统计
     InlierThresholdOptions inlier_thresholds = options_.inlier_thresholds;
     // Undistort the images and filter edges by inlier number
     ImagePairsInlierCount(view_graph, cameras, images, inlier_thresholds, true);

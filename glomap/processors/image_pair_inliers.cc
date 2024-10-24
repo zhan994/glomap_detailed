@@ -18,10 +18,12 @@ double ImagePairInliers::ScoreError() {
 }
 
 double ImagePairInliers::ScoreErrorEssential() {
+  // step: 1 根据相对位姿计算E矩阵
   const Rigid3d& cam2_from_cam1 = image_pair.cam2_from_cam1;
   Eigen::Matrix3d E;
   EssentialFromMotion(cam2_from_cam1, &E);
 
+  // step: 2 极点，相机i在相机j坐标系下的位置
   // eij = camera i on image j
   Eigen::Vector3d epipole12, epipole21;
   epipole12 = cam2_from_cam1.translation;
@@ -37,6 +39,7 @@ double ImagePairInliers::ScoreErrorEssential() {
   image_t image_id1 = image_pair.image_id1;
   image_t image_id2 = image_pair.image_id2;
 
+  // step: 3 误差阈值计算，在归一化空间中
   double thres = options.max_epipolar_error_E;
 
   // Conver the threshold from pixel space to normalized space
@@ -55,6 +58,7 @@ double ImagePairInliers::ScoreErrorEssential() {
   double thres_angle = 1;
   thres_angle += 1e-6;
   thres_epipole += 1e-6;
+  // step: 4 计算匹配是否合理
   for (size_t k = 0; k < image_pair.matches.rows(); ++k) {
     // Use the undistorted features
     pt1 = images.at(image_id1).features_undist[image_pair.matches(k, 0)];
@@ -203,9 +207,11 @@ void ImagePairsInlierCount(ViewGraph& view_graph,
                            const InlierThresholdOptions& options,
                            bool clean_inliers) {
   for (auto& [pair_id, image_pair] : view_graph.image_pairs) {
+    // step: 1 判断是否已经有inlier且clean_inliers=false，否则清空
     if (!clean_inliers && image_pair.inliers.size() > 0) continue;
     image_pair.inliers.clear();
 
+    // step: 2 图像对有效则统计inliers，计算误差
     if (image_pair.is_valid == false) continue;
     ImagePairInliers inlier_finder(image_pair, images, options, &cameras);
     inlier_finder.ScoreError();

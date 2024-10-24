@@ -10,12 +10,14 @@ namespace config = boost::program_options;
 namespace glomap {
 
 OptionManager::OptionManager(bool add_project_options) {
+  // step: 1 初始化参数
   database_path = std::make_shared<std::string>();
   image_path = std::make_shared<std::string>();
 
   mapper = std::make_shared<GlobalMapperOptions>();
   Reset();
 
+  // step: 2 新增参数help和log
   desc_->add_options()("help,h", "");
 
   AddAndRegisterDefaultOption("log_to_stderr", &FLAGS_logtostderr);
@@ -249,16 +251,20 @@ void OptionManager::AddInlierThresholdOptions() {
 }
 
 void OptionManager::Reset() {
+  // step: 1 重置GlobalMapperOptions
   const bool kResetPaths = true;
   ResetOptions(kResetPaths);
 
+  // step: 2 desc_ 重置
   desc_ = std::make_shared<boost::program_options::options_description>();
 
+  // step: 3 参数数值清空
   options_bool_.clear();
   options_int_.clear();
   options_double_.clear();
   options_string_.clear();
 
+  // step: 4 加入参数状态重置
   added_mapper_options_ = false;
   added_view_graph_calibration_options_ = false;
   added_relative_pose_options_ = false;

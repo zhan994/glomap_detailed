@@ -19,10 +19,16 @@ struct BundleAdjusterOptions;
 struct TriangulatorOptions;
 struct InlierThresholdOptions;
 
+// api: 参数option管理类
 class OptionManager {
  public:
+  // api: 构造
   explicit OptionManager(bool add_project_options = true);
+  
+  // api: 添加所有的参数
   void AddAllOptions();
+  
+  // api: 添加各模块参数
   void AddDatabaseOptions();
   void AddImageOptions();
   void AddGlobalMapperOptions();
@@ -38,18 +44,24 @@ class OptionManager {
   void AddTriangulatorOptions();
   void AddInlierThresholdOptions();
 
+  // api: 新增必需的参数，option为最后存储参数值的指针
   template <typename T>
   void AddRequiredOption(const std::string& name,
                          T* option,
                          const std::string& help_text = "");
+
+  // api: 新增带默认值的参数，option为最后存储参数值的指针
   template <typename T>
   void AddDefaultOption(const std::string& name,
                         T* option,
                         const std::string& help_text = "");
 
+  // api: 重置
   void Reset();
+  // api: 重置GlobalMapperOptions
   void ResetOptions(bool reset_paths);
 
+  // api: 解析命令行
   void Parse(int argc, char** argv);
 
   std::shared_ptr<std::string> database_path;
@@ -58,20 +70,26 @@ class OptionManager {
   std::shared_ptr<GlobalMapperOptions> mapper;
 
  private:
+  // api: 新增并注册必需有值的参数
   template <typename T>
   void AddAndRegisterRequiredOption(const std::string& name,
                                     T* option,
                                     const std::string& help_text = "");
+
+  // api: 新增并注册带默认值的参数
   template <typename T>
   void AddAndRegisterDefaultOption(const std::string& name,
                                    T* option,
                                    const std::string& help_text = "");
 
+  // api: 注册参数名
   template <typename T>
   void RegisterOption(const std::string& name, const T* option);
 
+  // option desc
   std::shared_ptr<boost::program_options::options_description> desc_;
 
+  // options dict
   std::vector<std::pair<std::string, const bool*>> options_bool_;
   std::vector<std::pair<std::string, const int*>> options_int_;
   std::vector<std::pair<std::string, const double*>> options_double_;

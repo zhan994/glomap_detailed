@@ -6,6 +6,7 @@
 
 namespace glomap {
 
+// api: 重力信息类
 struct GravityInfo {
  public:
   // Whether the gravity information is available
@@ -24,6 +25,7 @@ struct GravityInfo {
   Eigen::Matrix3d R_align;
 };
 
+// api: image类
 struct Image {
   Image() : image_id(-1), file_name("") {}
   Image(image_t img_id, camera_t cam_id, std::string file_name)
@@ -53,6 +55,7 @@ struct Image {
   std::vector<Eigen::Vector3d> features_undist;
 
   // Methods
+  // api: 相机中心，T_w_c.translation
   inline Eigen::Vector3d Center() const;
 };
 

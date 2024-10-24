@@ -8,13 +8,16 @@
 
 namespace glomap {
 
+// api: 视图类
 class ViewGraph {
  public:
   // Methods
+  // api: 删除无效图像对
   inline void RemoveInvalidPair(image_pair_t pair_id);
 
   // Mark the image which is not connected to any other images as not registered
   // Return: the number of images in the largest connected component
+  // api: 返回具有最大连接数的部分的图像数量
   int KeepLargestConnectedComponents(
       std::unordered_map<image_t, Image>& images);
 

@@ -229,7 +229,7 @@ void ViewGraphManipulater::UpdateImagePairsConfig(
     if (camera_validity[camera_id1] && camera_validity[camera_id2]) {
       image_pair.config = colmap::TwoViewGeometry::CALIBRATED;
 
-      // todo: F矩阵用单位矩阵变换恢复重置？
+      // note: F矩阵用单位矩阵变换恢复重置？ 内参可信时强制使用E矩阵
       std::cout
           << "FundamentalFromMotionAndCameras by image_pair.cam2_from_cam1:"
           << image_pair.cam2_from_cam1.ToMatrix().matrix() << std::endl;
@@ -281,7 +281,7 @@ void ViewGraphManipulater::DecomposeRelPose(
       two_view_geometry.F = image_pair.F;
       two_view_geometry.H = image_pair.H;
       two_view_geometry.config = image_pair.config;
-
+      // note: 使用E/H估计
       colmap::EstimateTwoViewGeometryPose(cameras[camera_id1],
                                           images[image_id1].features,
                                           cameras[camera_id2],

@@ -9,6 +9,7 @@
 namespace glomap {
 typedef std::pair<image_t, feature_t> Observation;
 
+// api: 3d点类
 struct Track {
   // The id of the track
   track_t track_id;

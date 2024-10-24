@@ -21,6 +21,7 @@ int RunMapper(int argc, char** argv) {
 
   // step: 1 参数初始化并解析
   OptionManager options;
+  // step: 1.1 添加 option_manager的基础参数
   options.AddRequiredOption("database_path", &database_path);
   options.AddRequiredOption("output_path", &output_path);
   options.AddDefaultOption("image_path", &image_path);
@@ -29,7 +30,9 @@ int RunMapper(int argc, char** argv) {
                            "{ONLY_POINTS, ONLY_CAMERAS, "
                            "POINTS_AND_CAMERAS_BALANCED, POINTS_AND_CAMERAS}");
   options.AddDefaultOption("output_format", &output_format, "{bin, txt}");
+  // step: 1.2 添加 全局建图 的所有参数
   options.AddGlobalMapperFullOptions();
+  // step: 1.3 解析命令行
   options.Parse(argc, argv);
 
   // step: 2 检查database
@@ -38,7 +41,7 @@ int RunMapper(int argc, char** argv) {
     return EXIT_FAILURE;
   }
 
-  // step: 3 约束类型
+  // step: 3 约束类型赋值
   if (constraint_type == "ONLY_POINTS") {
     options.mapper->opt_gp.constraint_type =
         GlobalPositionerOptions::ONLY_POINTS;

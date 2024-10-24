@@ -10,6 +10,7 @@
 namespace glomap {
 
 // FUTURE: add covariance to the relative pose
+// api: 图像对类
 struct ImagePair {
   ImagePair() : pair_id(-1), image_id1(-1), image_id2(-1) {}
   ImagePair(image_t img_id1, image_t img_id2, Rigid3d pose_rel = Rigid3d())
@@ -39,7 +40,7 @@ struct ImagePair {
   // Homography matrix.
   Eigen::Matrix3d H = Eigen::Matrix3d::Zero();
 
-  // Relative pose.
+  // Relative pose. T_cam2_cam1
   Rigid3d cam2_from_cam1;
 
   // Matches between the two images.
@@ -50,9 +51,11 @@ struct ImagePair {
   // Row index of inliers in the matches matrix.
   std::vector<int> inliers;
 
+  // api: 图像对的图像id -> 图像对id
   static inline image_pair_t ImagePairToPairId(const image_t image_id1,
                                                const image_t image_id2);
 
+  // api: 图像对id -> 图像对的图像id
   static inline void PairIdToImagePair(const image_pair_t pair_id,
                                        image_t& image_id1,
                                        image_t& image_id2);

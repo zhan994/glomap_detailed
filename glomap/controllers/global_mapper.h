@@ -13,22 +13,23 @@
 
 namespace glomap {
 
+// api: 全局建图参数类
 struct GlobalMapperOptions {
   // Options for each component
-  ViewGraphCalibratorOptions opt_vgcalib;
-  RelativePoseEstimationOptions opt_relpose;
-  RotationEstimatorOptions opt_ra;
-  TrackEstablishmentOptions opt_track;
-  GlobalPositionerOptions opt_gp;
-  BundleAdjusterOptions opt_ba;
-  TriangulatorOptions opt_triangulator;
+  ViewGraphCalibratorOptions opt_vgcalib; // vg_calib
+  RelativePoseEstimationOptions opt_relpose; // relpose_esti
+  RotationEstimatorOptions opt_ra; // rotation_esti
+  TrackEstablishmentOptions opt_track; // track_establish
+  GlobalPositionerOptions opt_gp; // global_position
+  BundleAdjusterOptions opt_ba; // ba
+  TriangulatorOptions opt_triangulator; // retriangle
 
   // Inlier thresholds for each component
   InlierThresholdOptions inlier_thresholds;
 
   // Control the number of iterations for each component
-  int num_iteration_bundle_adjustment = 3;
-  int num_iteration_retriangulation = 1;
+  int num_iteration_bundle_adjustment = 3; // ba次数
+  int num_iteration_retriangulation = 1; // retrian次数
 
   // Control the flow of the global sfm
   bool skip_preprocessing = false;

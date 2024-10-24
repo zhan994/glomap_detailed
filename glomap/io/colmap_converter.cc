@@ -267,7 +267,7 @@ void ConvertDatabaseToGlomap(const colmap::Database& database,
     if (two_view.config == colmap::TwoViewGeometry::UNCALIBRATED) {
       image_pair.F = two_view.F;
     } else if (two_view.config == colmap::TwoViewGeometry::CALIBRATED) {
-      // todo: F矩阵用单位矩阵变换恢复重置？
+      // note: F矩阵用单位矩阵变换恢复重置？ 内参可信时强制使用E矩阵
       std::cout
           << "FundamentalFromMotionAndCameras by two_view.cam2_from_cam1: "
           << two_view.cam2_from_cam1.ToMatrix().matrix() << std::endl;

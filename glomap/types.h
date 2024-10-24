@@ -15,6 +15,7 @@ constexpr double EPS = 1e-12;
 constexpr double HALF_PI = 3.141592653589793238462643383279502884L / 2;
 constexpr double TWO_PI = 2 * 3.141592653589793238462643383279502884L;
 
+// api: inlier阈值参数类
 struct InlierThresholdOptions {
   // Thresholds for 3D-2D matches
   double max_angle_error = 1.;           // in degree, for global positioning
