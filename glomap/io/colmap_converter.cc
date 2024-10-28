@@ -24,26 +24,31 @@ void ConvertGlomapToColmap(const std::unordered_map<camera_t, Camera>& cameras,
                            colmap::Reconstruction& reconstruction,
                            int cluster_id,
                            bool include_image_points) {
-  // Clear the colmap reconstruction
+  // step: 1 Clear the colmap reconstruction
   reconstruction = colmap::Reconstruction();
 
-  // Add cameras
+  // step: 2 Add cameras
   for (const auto& [camera_id, camera] : cameras) {
     reconstruction.AddCamera(camera);
   }
 
   // Prepare the 2d-3d correspondences
+  // step: 3 图像与3d点的关系
   std::unordered_map<image_t, std::vector<track_t>> image_to_point3D;
   if (tracks.size() > 0 || include_image_points) {
     // Initialize every point to corresponds to invalid point
+    // step: 3.1 每个特征点初始化为无效3d点
     for (auto& [image_id, image] : images) {
+      // note: is_registered=true 
       if (!image.is_registered ||
           (cluster_id != -1 && image.cluster_id != cluster_id))
         continue;
+
       image_to_point3D[image_id] =
           std::vector<track_t>(image.features.size(), -1);
     }
 
+    // step: 3.2 找观测大于3的3d的点进行对应的图像的3d点的id赋值
     if (tracks.size() > 0) {
       for (auto& [track_id, track] : tracks) {
         if (track.observations.size() < 3) {
@@ -59,14 +64,14 @@ void ConvertGlomapToColmap(const std::unordered_map<camera_t, Camera>& cameras,
     }
   }
 
-  // Add points
+  // step: 4 Add points
   for (const auto& [track_id, track] : tracks) {
     colmap::Point3D colmap_point;
     colmap_point.xyz = track.xyz;
     colmap_point.color = track.color;
     colmap_point.error = 0;
 
-    // Add track element
+    // step: 4.1 Add track element
     for (auto& observation : track.observations) {
       const Image& image = images.at(observation.first);
       if (!image.is_registered ||
@@ -85,16 +90,19 @@ void ConvertGlomapToColmap(const std::unordered_map<camera_t, Camera>& cameras,
     reconstruction.AddPoint3D(track_id, std::move(colmap_point));
   }
 
-  // Add images
+  // step: 5 Add images
   for (const auto& [image_id, image] : images) {
     if (!image.is_registered ||
         (cluster_id != -1 && image.cluster_id != cluster_id))
       continue;
 
+    // step: 5.1 转为colmap::Image
     colmap::Image image_colmap;
     bool keep_points =
         image_to_point3D.find(image_id) != image_to_point3D.end();
     ConvertGlomapToColmapImage(image, image_colmap, keep_points);
+
+    // step: 5.2 设置feat对应的3d点
     if (keep_points) {
       std::vector<track_t>& track_ids = image_to_point3D[image_id];
       for (size_t i = 0; i < image.features.size(); i++) {
@@ -107,6 +115,7 @@ void ConvertGlomapToColmap(const std::unordered_map<camera_t, Camera>& cameras,
     reconstruction.AddImage(std::move(image_colmap));
   }
 
+  // step: 6 更新3d点惨差
   reconstruction.UpdatePoint3DErrors();
 }
 
