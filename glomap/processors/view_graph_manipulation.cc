@@ -179,7 +179,7 @@ void ViewGraphManipulater::UpdateImagePairsConfig(
   std::unordered_map<camera_t, std::pair<int, int>> camera_counter;
   for (auto& [pair_id, image_pair] : view_graph.image_pairs) {
     if (image_pair.is_valid == false) continue;
-
+    // note: 大部分情况下，camera_id只有一个
     camera_t camera_id1 = images.at(image_pair.image_id1).camera_id;
     camera_t camera_id2 = images.at(image_pair.image_id2).camera_id;
 
@@ -213,7 +213,7 @@ void ViewGraphManipulater::UpdateImagePairsConfig(
     }
   }
 
-  // step: 3 对于F-UNCALIBRATED的图像对通过帧间姿态恢复F/E
+  // step: 3 对于F-UNCALIBRATED的图像对通过帧间姿态恢复F
   for (auto& [pair_id, image_pair] : view_graph.image_pairs) {
     if (image_pair.is_valid == false) continue;
     if (image_pair.config != colmap::TwoViewGeometry::UNCALIBRATED) continue;
@@ -227,6 +227,8 @@ void ViewGraphManipulater::UpdateImagePairsConfig(
         cameras.at(images.at(image_pair.image_id2).camera_id);
 
     if (camera_validity[camera_id1] && camera_validity[camera_id2]) {
+      // note:
+      // 由于有先验相机内参，强行将UNCALIBRATED转为CALIBRATED，F用单位阵初始化
       image_pair.config = colmap::TwoViewGeometry::CALIBRATED;
 
       // note: F矩阵用单位矩阵变换恢复重置？ 内参可信时强制使用E矩阵
@@ -264,6 +266,7 @@ void ViewGraphManipulater::DecomposeRelPose(
 
   // step: 2 开启线程池处理 two_view_geometry
   colmap::ThreadPool thread_pool(colmap::ThreadPool::kMaxNumThreads);
+  // colmap::ThreadPool thread_pool(1);
   for (int64_t idx = 0; idx < num_image_pairs; idx++) {
     thread_pool.AddTask([&, idx]() {
       // step: 2.1 读取图像对信息
@@ -277,11 +280,12 @@ void ViewGraphManipulater::DecomposeRelPose(
       // Use the two-view geometry to re-estimate the relative pose
       // step: 2.2 利用 two_view_geometry 重新估计 rel pose
       colmap::TwoViewGeometry two_view_geometry;
-      two_view_geometry.E = image_pair.E;
-      two_view_geometry.F = image_pair.F;
-      two_view_geometry.H = image_pair.H;
+      two_view_geometry.E = image_pair.E;  // 未赋值
+      two_view_geometry.F = image_pair.F;  // 单位阵初始化
+      two_view_geometry.H = image_pair.H;  // 赋值
       two_view_geometry.config = image_pair.config;
-      // note: 使用E/H估计
+
+      // note: 使用E/H估计，使用E实际无效，H对应PLANAR_OR_PANORAMIC估计后确定最终配置
       colmap::EstimateTwoViewGeometryPose(cameras[camera_id1],
                                           images[image_id1].features,
                                           cameras[camera_id2],
@@ -315,13 +319,15 @@ void ViewGraphManipulater::DecomposeRelPose(
   size_t counter = 0;
   for (size_t idx = 0; idx < image_pair_ids.size(); idx++) {
     ImagePair& image_pair = view_graph.image_pairs.at(image_pair_ids[idx]);
-
-    std::cout << "DecomposeRelPose: "
+    // note: 目前看来只有H阵估计了rel_pose
+    std::cout << idx << ", DecomposeRelPose: "
               << image_pair.cam2_from_cam1.ToMatrix().matrix() << std::endl;
 
     if (image_pair.config != colmap::TwoViewGeometry::CALIBRATED &&
-        image_pair.config != colmap::TwoViewGeometry::PLANAR_OR_PANORAMIC)
+        image_pair.config != colmap::TwoViewGeometry::PLANAR_OR_PANORAMIC) {
+      std::cout << image_pair.config << std::endl;
       counter++;
+    }
   }
   LOG(INFO) << "Decompose relative pose done. " << counter
             << " pairs are pure rotation";

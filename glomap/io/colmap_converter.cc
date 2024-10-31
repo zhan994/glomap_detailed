@@ -39,7 +39,7 @@ void ConvertGlomapToColmap(const std::unordered_map<camera_t, Camera>& cameras,
     // Initialize every point to corresponds to invalid point
     // step: 3.1 每个特征点初始化为无效3d点
     for (auto& [image_id, image] : images) {
-      // note: is_registered=true 
+      // note: is_registered=true
       if (!image.is_registered ||
           (cluster_id != -1 && image.cluster_id != cluster_id))
         continue;
@@ -185,7 +185,7 @@ void ConvertDatabaseToGlomap(const colmap::Database& database,
                              ViewGraph& view_graph,
                              std::unordered_map<camera_t, Camera>& cameras,
                              std::unordered_map<image_t, Image>& images) {
-  // step: 1 Add the images
+  // step: 1 图片数据
   std::vector<colmap::Image> images_colmap = database.ReadAllImages();
   image_t counter = 0;
   for (auto& image : images_colmap) {
@@ -193,24 +193,28 @@ void ConvertDatabaseToGlomap(const colmap::Database& database,
               << images_colmap.size() << std::flush;
     counter++;
 
+    // step: 1.1 image_id 有效则插入 std::pair<image_t,Image>
     image_t image_id = image.ImageId();
     if (image_id == colmap::kInvalidImageId) continue;
     auto ite = images.insert(std::make_pair(
         image_id, Image(image_id, image.CameraId(), image.Name())));
 
     // todo: add pose_prior by txt/csv file
+    // step: 1.2 pose_prior 有效则更新 pair 的 Image 属性
     const colmap::PosePrior prior = database.ReadPosePrior(image_id);
     std::cout << "PosePrior info: " << prior.position << std::endl;
     if (prior.IsValid()) {
-      ite.first->second.cam_from_world = Rigid3d(
-          colmap::Rigid3d(Eigen::Quaterniond::Identity(), prior.position));
+      // note: fix conversion of colmap pose prior
+      const colmap::Rigid3d world_from_cam_prior(Eigen::Quaterniond::Identity(),
+                                                 prior.position);
+      ite.first->second.cam_from_world = Rigid3d(Inverse(world_from_cam_prior));
     } else {
       ite.first->second.cam_from_world = Rigid3d();
     }
   }
   std::cout << std::endl;
 
-  // step: 2 Read keypoints
+  // step: 2 特征点根据image_id读取后挨个转换为当前 Image 中的数据
   for (auto& [image_id, image] : images) {
     colmap::FeatureKeypoints keypoints = database.ReadKeypoints(image_id);
 
@@ -221,19 +225,20 @@ void ConvertDatabaseToGlomap(const colmap::Database& database,
     }
   }
 
-  // step: 3 Add the cameras
+  // step: 3 相机
   std::vector<colmap::Camera> cameras_colmap = database.ReadAllCameras();
   for (auto& camera : cameras_colmap) {
     camera_t camera_id = camera.camera_id;
     cameras[camera_id] = camera;
   }
 
-  // step: 4 Add the matches & view_graph via matches
+  // step: 4 图像对
   std::vector<std::pair<colmap::image_pair_t, colmap::FeatureMatches>>
       all_matches = database.ReadAllMatches();
 
   // Go through all matches and store the matche with enough observations in the
   // view_graph
+  // note: view_graph只保存有足够观测的图像对
   size_t invalid_count = 0;
   std::unordered_map<image_pair_t, ImagePair>& image_pairs =
       view_graph.image_pairs;
@@ -242,27 +247,29 @@ void ConvertDatabaseToGlomap(const colmap::Database& database,
       std::cout << "\r Loading Image Pair " << match_idx + 1 << " / "
                 << all_matches.size() << std::flush;
 
-    // step: 4.1 Read the image pair
+    // step: 4.1 根据图像对的 pair_id 索引这对图像的 image_id
     colmap::image_pair_t pair_id = all_matches[match_idx].first;
     std::pair<colmap::image_t, colmap::image_t> image_pair_colmap =
         database.PairIdToImagePair(pair_id);
     colmap::image_t image_id1 = image_pair_colmap.first;
     colmap::image_t image_id2 = image_pair_colmap.second;
 
-    // step: 4.2 Read feature matches
+    // step: 4.2 特征匹配数据，即特征在图像中的索引
     colmap::FeatureMatches& feature_matches = all_matches[match_idx].second;
 
     // Initialize the image pair
-    // step: 4.3 two_view_geometry for image_pair
+    // step: 4.3 加入图像对，以及获取两视图几何
     auto ite = image_pairs.insert(
         std::make_pair(ImagePair::ImagePairToPairId(image_id1, image_id2),
                        ImagePair(image_id1, image_id2)));
     ImagePair& image_pair = ite.first->second;
 
+    // note: 一般colmap默认不估计帧间的pose
     colmap::TwoViewGeometry two_view =
         database.ReadTwoViewGeometry(image_id1, image_id2);
 
     // If the image is marked as invalid or watermark, then skip
+    // note: 几何关系不符要求的跳过
     if (two_view.config == colmap::TwoViewGeometry::UNDEFINED ||
         two_view.config == colmap::TwoViewGeometry::DEGENERATE ||
         two_view.config == colmap::TwoViewGeometry::WATERMARK ||
@@ -272,10 +279,12 @@ void ConvertDatabaseToGlomap(const colmap::Database& database,
       continue;
     }
 
-    // step: 4.3.1 matrixF / matrixH (planar)
+    // step: 4.3.1 UNCALIBRATED->F
     if (two_view.config == colmap::TwoViewGeometry::UNCALIBRATED) {
       image_pair.F = two_view.F;
     } else if (two_view.config == colmap::TwoViewGeometry::CALIBRATED) {
+      // step: 4.3.2 CALIBRATED->F用单位阵初始化
+      // note: CALIBRATED 时，E矩阵没有赋值
       // note: F矩阵用单位矩阵变换恢复重置？ 内参可信时强制使用E矩阵
       std::cout
           << "FundamentalFromMotionAndCameras by two_view.cam2_from_cam1: "
@@ -290,19 +299,22 @@ void ConvertDatabaseToGlomap(const colmap::Database& database,
                two_view.config == colmap::TwoViewGeometry::PANORAMIC ||
                two_view.config ==
                    colmap::TwoViewGeometry::PLANAR_OR_PANORAMIC) {
+      // step: 4.3.3 PLANAR->F&H
       image_pair.H = two_view.H;
       image_pair.F = two_view.F;
     }
     image_pair.config = two_view.config;
 
-    // step: 4.4 Collect the matches
+    // step: 4.4 图像对的匹配点数据
     image_pair.matches = Eigen::MatrixXi(feature_matches.size(), 2);
 
+    // step: 4.4.1 两张图像分别获取各自的特征点数据
     std::vector<Eigen::Vector2d>& keypoints1 =
         images[image_pair.image_id1].features;
     std::vector<Eigen::Vector2d>& keypoints2 =
         images[image_pair.image_id2].features;
 
+    // step: 4.4.2 根据有效索引以及特征点数检查匹配特征的有效性
     feature_t count = 0;
     for (int i = 0; i < feature_matches.size(); i++) {
       colmap::point2D_t point2D_idx1 = feature_matches[i].point2D_idx1;

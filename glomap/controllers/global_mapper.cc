@@ -26,13 +26,15 @@ bool GlobalMapper::Solve(const colmap::Database& database,
     run_timer.Start();
     // If camera intrinsics seem to be good, force the pair to use essential
     // matrix
-    // note: 如果内参可信，强制使用E本质矩阵
+    // step: 0.1 先验内参可信，强制使用E本质矩阵，将F矩阵后面使用E来计算
     ViewGraphManipulater::UpdateImagePairsConfig(view_graph, cameras, images);
+
+    // step: 0.2 解析相对pose，当前仅有H阵PLANAR_OR_PANORAMIC发生有效计算
     ViewGraphManipulater::DecomposeRelPose(view_graph, cameras, images);
     run_timer.PrintSeconds();
   }
 
-  // step: 1 Run view graph calibration
+  // step: 1 view_graph矫正，有先验内参则不进行计算
   if (!options_.skip_view_graph_calibration) {
     std::cout << "-------------------------------------" << std::endl;
     std::cout << "Running view graph calibration ..." << std::endl;
