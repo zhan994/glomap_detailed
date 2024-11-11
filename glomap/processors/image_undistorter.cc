@@ -11,6 +11,9 @@ void UndistortImages(std::unordered_map<camera_t, Camera>& cameras,
   std::vector<image_t> image_ids;
   for (auto& [image_id, image] : images) {
     const int num_points = image.features.size();
+    std::cout << "image_id: " << image_id << ", feat_num: " << num_points
+              << ", undist_num: " << image.features_undist.size() << std::endl;
+
     if (image.features_undist.size() == num_points && !clean_points)
       continue;  // already undistorted
     image_ids.push_back(image_id);
@@ -30,7 +33,7 @@ void UndistortImages(std::unordered_map<camera_t, Camera>& cameras,
     // step: 2.2 获取相机参数
     const Camera& camera = cameras[image.camera_id];
 
-    // step: 2.3 在相机坐标系下的归一化特征点射线
+    // step: 2.3 像素坐标转到归一化相机坐标系下的射线
     thread_pool.AddTask([&image, &camera, num_points]() {
       image.features_undist.clear();
       image.features_undist.reserve(num_points);

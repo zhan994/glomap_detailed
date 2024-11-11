@@ -23,7 +23,8 @@ void EstimateRelativePoses(ViewGraph& view_graph,
   const int64_t interval =
       std::ceil(static_cast<double>(num_image_pairs) / kNumChunks);
 
-  colmap::ThreadPool thread_pool(colmap::ThreadPool::kMaxNumThreads);
+  // colmap::ThreadPool thread_pool(colmap::ThreadPool::kMaxNumThreads);
+  colmap::ThreadPool thread_pool(1);
   // step: 3 线程池计算相对位姿
   LOG(INFO) << "Estimating relative pose for " << num_image_pairs << " pairs";
   for (int64_t chunk_id = 0; chunk_id < kNumChunks; chunk_id++) {
@@ -38,7 +39,7 @@ void EstimateRelativePoses(ViewGraph& view_graph,
     for (int64_t pair_idx = start; pair_idx < end; pair_idx++) {
       thread_pool.AddTask([&, pair_idx]() {
         // Define as thread-local to reuse memory allocation in different tasks.
-        // step: 3.2.1 获取图像对的图像信息、特征点对信息
+        // step: 3.2.1 获取图像对的图像信息、像素特征点对信息
         thread_local std::vector<Eigen::Vector2d> points2D_1;
         thread_local std::vector<Eigen::Vector2d> points2D_2;
         thread_local std::vector<char> inliers;
@@ -79,10 +80,15 @@ void EstimateRelativePoses(ViewGraph& view_graph,
         // Convert the relative pose to the glomap format
         // step: 3.2.3 将估计结果转到glomap的vg中
         for (int i = 0; i < 4; i++) {
+          // note: eigen uses wxyz, pose_lib uses xyzw
           image_pair.cam2_from_cam1.rotation.coeffs()[i] =
               pose_rel_calc.q[(i + 1) % 4];
         }
         image_pair.cam2_from_cam1.translation = pose_rel_calc.t;
+
+        std::cout << "\r Estimated relative pose q(xyzw): "
+                  << pose_rel_calc.q.transpose()
+                  << ", \n t: " << pose_rel_calc.t.transpose() << std::endl;
       });
     }
 

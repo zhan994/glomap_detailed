@@ -227,8 +227,7 @@ void ViewGraphManipulater::UpdateImagePairsConfig(
         cameras.at(images.at(image_pair.image_id2).camera_id);
 
     if (camera_validity[camera_id1] && camera_validity[camera_id2]) {
-      // note:
-      // 由于有先验相机内参，强行将UNCALIBRATED转为CALIBRATED，F用单位阵初始化
+      // note: 有先验相机内参，强行将UNCALIBRATED转为CALIBRATED，F用单位阵初始化
       image_pair.config = colmap::TwoViewGeometry::CALIBRATED;
 
       // note: F矩阵用单位矩阵变换恢复重置？ 内参可信时强制使用E矩阵
@@ -285,7 +284,8 @@ void ViewGraphManipulater::DecomposeRelPose(
       two_view_geometry.H = image_pair.H;  // 赋值
       two_view_geometry.config = image_pair.config;
 
-      // note: 使用E/H估计，使用E实际无效，H对应PLANAR_OR_PANORAMIC估计后确定最终配置
+      // note: E实际无效
+      // note: H对应PLANAR_OR_PANORAMIC，估计后在 2.3 确定最终配置
       colmap::EstimateTwoViewGeometryPose(cameras[camera_id1],
                                           images[image_id1].features,
                                           cameras[camera_id2],
@@ -319,7 +319,7 @@ void ViewGraphManipulater::DecomposeRelPose(
   size_t counter = 0;
   for (size_t idx = 0; idx < image_pair_ids.size(); idx++) {
     ImagePair& image_pair = view_graph.image_pairs.at(image_pair_ids[idx]);
-    // note: 目前看来只有H阵估计了rel_pose
+    // note: 目前看来只有 H 重新估计了 rel_pose
     std::cout << idx << ", DecomposeRelPose: "
               << image_pair.cam2_from_cam1.ToMatrix().matrix() << std::endl;
 

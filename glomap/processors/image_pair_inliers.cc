@@ -18,6 +18,7 @@ double ImagePairInliers::ScoreError() {
 }
 
 double ImagePairInliers::ScoreErrorEssential() {
+  std::cout << "ImagePairInliers::ScoreErrorEssential" << std::endl;
   // step: 1 根据相对位姿计算E矩阵
   const Rigid3d& cam2_from_cam1 = image_pair.cam2_from_cam1;
   Eigen::Matrix3d E;
@@ -96,6 +97,7 @@ double ImagePairInliers::ScoreErrorEssential() {
 }
 
 double ImagePairInliers::ScoreErrorFundamental() {
+  std::cout << "ImagePairInliers::ScoreErrorFundamental" << std::endl;
   if (image_pair.inliers.size() > 0) {
     image_pair.inliers.clear();
   }
@@ -168,6 +170,7 @@ double ImagePairInliers::ScoreErrorFundamental() {
 }
 
 double ImagePairInliers::ScoreErrorHomography() {
+  std::cout << "ImagePairInliers::ScoreErrorHomography" << std::endl;
   if (image_pair.inliers.size() > 0) {
     image_pair.inliers.clear();
   }
